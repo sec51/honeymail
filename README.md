@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/sec51/honeymail.svg?branch=master)](https://travis-ci.org/sec51/honeymail)
+
 ### SMTP honeypot
 
 STATUS: work in progress - NOT ready for prime time.
