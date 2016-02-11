@@ -2,27 +2,21 @@ package smtpd
 
 // States of the SMTP conversation. These are bits and can be masked
 // together.
-type conState int
+type clientSessionState int
 
 const (
-	sStartup conState = iota // Must be zero value
-
-	sInitial conState = 1 << iota
+	sInitial clientSessionState = 1 << iota
 	sHelo
-	sAuth // during SASL dialog
+	sAuth
 	sMail
 	sRcpt
 	sData
 	sReceivingData
-	sQuit // QUIT received and ack'd, we're exiting.
+	sQuit
 	sPostData
-	sAbort
-
-	// Synthetic state
-
 )
 
-func (c conState) String() string {
+func (c clientSessionState) String() string {
 	switch c {
 	case sHelo:
 		return "HELLO"
@@ -41,17 +35,4 @@ func (c conState) String() string {
 	default:
 		return "unknown"
 	}
-}
-
-// A command not in the states map is handled in all states (probably to
-// be rejected).
-var states = map[Command]struct {
-	validin, next conState
-}{
-	HELO:     {sInitial | sHelo, sHelo},
-	EHLO:     {sInitial | sHelo, sHelo},
-	AUTH:     {sHelo, sHelo},
-	MAILFROM: {sHelo, sMail},
-	RCPTTO:   {sMail | sRcpt, sRcpt},
-	DATA:     {sRcpt, sData},
 }

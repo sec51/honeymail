@@ -8,42 +8,15 @@ import (
 	"net"
 )
 
-// Conn represents an ongoing SMTP connection. The TLS fields are
-// read-only.
-//
-// Note that this structure cannot be created by hand. Call NewConn.
-//
-// Conn connections always advertise support for PIPELINING and
-// 8BITMIME.  STARTTLS is advertised if the Config passed to NewConn()
-// has a non-nil TLSConfig. AUTH is advertised if the Config has a
-// non-nil Auth.
-//
-// Conn.Config can be altered to some degree after Conn is created in
-// order to manipulate features on the fly. Note that Conn.Config.Limits
-// is a pointer and so its fields should not be altered unless you
-// know what you're doing and it's your Limits to start with.
 type clientSession struct {
 	hostname      string
 	remoteAddress string
 	remotePort    string
 	conn          *net.TCPConn // the connection with the client
 	tlsConn       *tls.Conn
-	state         conState
+	state         clientSessionState
 	isTLS         bool //indicate whether the client upgraded successfully to TLS
 	calledMail    bool
-
-	//badcmds       int  // count of bad commands so far
-	//authenticated bool // true after successful auth dialog
-
-	// queued event returned by a forthcoming Next call
-	//nextEvent *EventInfo
-
-	// used for state tracking for Accept()/Reject()/Tempfail().
-	//curcmd  Command
-	//replied bool
-
-	//TLSOn    bool                // TLS is on in this connection
-	//TLSState tls.ConnectionState // TLS connection state
 }
 
 func NewClientSession(conn *net.TCPConn) *clientSession {
@@ -65,7 +38,7 @@ func NewClientSession(conn *net.TCPConn) *clientSession {
 	return &s
 }
 
-// verofy the clinet provided hostname
+// verify the clinet provided hostname
 // we need to verify:
 // 1- MX presence
 // 2- SPF (TXT)
@@ -75,18 +48,23 @@ func NewClientSession(conn *net.TCPConn) *clientSession {
 // in this case we need to verify a PTR record presence
 func (s *clientSession) verifyHost(remoteHostname string) error {
 
-	// always allow localhost to connect via localhost
-	// this helps with tests
-	if remoteHostname == "localhost" || remoteHostname == "127.0.0.1" && s.remoteAddress == "127.0.0.1" {
+	// if the string passed is localhost
+	if remoteHostname == "localhost" {
 		// assign it to the client session
-		s.hostname = remoteHostname
-		return nil
+		remoteHostname = s.remoteAddress
+	}
+
+	// try to parse it as IP address
+	// check if it was a LoopBack IP address, if so check the remote ip of the connection
+	if ip := net.ParseIP(remoteHostname); ip != nil && ip.IsLoopback() {
+		remoteHostname = s.remoteAddress
 	}
 
 	// try with IP resolution first
 	hosts, err := net.LookupAddr(remoteHostname)
 	// this means it was an ip address
 	if err == nil {
+
 		for _, host := range hosts {
 			err = verifyMX(host)
 			// if it did not fail it means the host is a valid MX
@@ -97,7 +75,7 @@ func (s *clientSession) verifyHost(remoteHostname string) error {
 
 	}
 
-	// if we reached this point then we need to verofy the MX via the hostname
+	// if we reached this point then we need to verify the MX via the hostname
 	return verifyMX(remoteHostname)
 
 }

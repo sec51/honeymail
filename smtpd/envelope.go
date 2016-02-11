@@ -13,7 +13,7 @@ type envelope struct {
 	From       *mail.Address
 	To         *mail.Address
 	Forward    []*mail.Address
-	state      conState // the status of the envelope
+	state      clientSessionState // the status of the envelope
 	Message    []byte
 }
 

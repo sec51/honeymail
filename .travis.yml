@@ -1,0 +1,10 @@
+language: go
+
+go:
+  - 1.5.3
+
+install:  
+  - go get github.com/Sirupsen/logrus  
+
+script:
+  - go test -tags=integration -v ./...

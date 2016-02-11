@@ -17,7 +17,7 @@ func init() {
 		c := []byte(time.Now().String())
 		for {
 			h.Write(c)
-			id <- fmt.Sprintf("%x", h.Sum(nil))
+			idGenerator <- fmt.Sprintf("%x", h.Sum(nil))
 		}
 	}()
 

@@ -102,7 +102,7 @@ func (s *tcpServer) Start() {
 			log.Infoln("Amount of mail client connections:", totalClientConnections)
 
 			// set a read timeout
-			conn.SetReadDeadline(time.Now().Add(DefaultLimits.CmdInput))
+			conn.SetReadDeadline(time.Now().Add(4 * time.Minute))
 			go s.handleTCPConnection(NewClientSession(conn))
 
 		}
@@ -134,7 +134,7 @@ func (s *tcpServer) handleTCPConnection(client *clientSession) {
 	}
 
 	// increment connection counter
-	s.incrementConnectionCounter(clientId)
+	s.incrementConnectionCounter(clientId, client)
 
 	// new mail client connection was successfully created
 	// create a new envelope because we expect the client to send the HELO/EHLO command
@@ -145,7 +145,7 @@ func (s *tcpServer) handleTCPConnection(client *clientSession) {
 	reader := textproto.NewReader(bufferedReader)
 
 	// parsed command
-	var command ParsedLine
+	var command ParsedCommand
 
 command_loop:
 	for {
@@ -168,7 +168,7 @@ command_loop:
 				envelope.Message = dotBytes
 
 				// write back to the client
-				client.writeData(kMessageAccepted)
+				client.writeData(fmt.Sprintf(kMessageAccepted, envelope.Id))
 
 				// set the state as post data, so during the loop it does not eneter here again
 				envelope.MarkInPostDataMode()
@@ -190,16 +190,11 @@ command_loop:
 		line, err := reader.ReadLine()
 
 		// parse the command line
-		command = ParseCmd(line)
-		if command.Err != nil {
-			log.Println("CAUGHT error while parsing the command", err, line)
+		command = *ParseCmd(line)
+		if command.Response != "" {
+			log.Errorln("CAUGHT error while parsing the command", err, line)
 
-			// write the error response
-			response := command.Response
-			if response == "" {
-				response = kCommandNotRecognized
-			}
-			client.writeData(response)
+			client.writeData(command.Response)
 			continue
 		}
 
@@ -261,55 +256,39 @@ command_loop:
 
 			break
 		case HELO:
-			if err := client.verifyHost(command.Arg); err != nil {
+			if err := client.verifyHost(command.Argument); err != nil {
 				log.Errorln("Suspicious connection...continuing nonetheless")
 			}
 			client.writeData(fmt.Sprintf("250 %s Hello %v", s.name, client.remoteAddress))
 			break
 		case EHLO:
-			if err := client.verifyHost(command.Arg); err != nil {
+			if err := client.verifyHost(command.Argument); err != nil {
 				log.Errorln("Suspicious connection...continuing nonetheless")
 			}
 
 			client.writeData(fmt.Sprintf("250-%s Hello %v", s.name, client.remoteAddress))
-			// We advertise 8BITMIME per
-			// http://cr.yp.to/smtp/8bitmime.html
-			client.writeData("250-8BITMIME")
+			client.writeData(fmt.Sprintf("250-SIZE %d", kFixedSize))
+			//client.writeData("250-ENHANCEDSTATUSCODES")
+			client.writeData("250-PIPELINING")
+			client.writeData("250 8BITMIME")
 			client.writeData("250-VRFY")
 			client.writeData("250-HELP")
-			client.writeData("250-PIPELINING")
-			// STARTTLS RFC says: MUST NOT advertise STARTTLS
-			// after TLS is on.
+
+			// we cannot advertise STARTTLS in case it was already
+			// or in case the connection happens already via TLS
 			if !s.withTLS && !client.isTLS {
 				client.writeData("250-STARTTLS")
 			}
-			// RFC4954 notes: A server implementation MUST
-			// implement a configuration in which it does NOT
-			// permit any plaintext password mechanisms, unless
-			// either the STARTTLS [SMTP-TLS] command has been
-			// negotiated...
-			// if c.Config.Auth != nil {
-			// 	c.replyMore("250-AUTH " + strings.Join(c.authMechanisms(), " "))
-			// }
-			// We do not advertise SIZE because our size limits
-			// are different from the size limits that RFC 1870
-			// wants us to use. We impose a flat byte limit while
-			// RFC 1870 wants us to not count quoted dots.
-			// Advertising SIZE would also require us to parse
-			// SIZE=... on MAIL FROM in order to 552 any too-large
-			// sizes.
-			// On the whole: pass. Cannot implement.
-			// (In general SIZE is hella annoying if you read the
-			// RFC religiously.)
-			//c.replyMore("250 HELP")
+
+			// TODO: implement AUTH
+
 		case AUTH:
-			//c.authDone(true)
-			//c.reply("235 Authentication successful")
+			client.writeData(kCommandNotImplemented)
 			break
 		case MAILFROM:
 
 			// parse the mail address and make sure it'a a valid one
-			fromAddress, err := verifyEmailAddress(command.Arg)
+			fromAddress, err := verifyEmailAddress(command.Argument)
 			if err != nil {
 				log.Println("Error parsing FROM address", err)
 				client.writeData(kRequestAborted)
@@ -321,7 +300,7 @@ command_loop:
 		case RCPTTO:
 
 			// parse the mail address and make sure it'a a valid one
-			toAddress, err := verifyEmailAddress(command.Arg)
+			toAddress, err := verifyEmailAddress(command.Argument)
 			if err != nil {
 				log.Println("Error parsing TO address", err)
 				client.writeData(kRequestAborted)
@@ -358,7 +337,7 @@ command_loop:
 
 }
 
-func (s *tcpServer) incrementConnectionCounter(clientId string) {
+func (s *tcpServer) incrementConnectionCounter(clientId string, client *clientSession) {
 
 	// update the map and the total connections
 	clientMutex.Lock()
