@@ -26,27 +26,27 @@ var (
 )
 
 type tcpServer struct {
-	stopMutex sync.Mutex
-	localAddr string
-	localPort string
-	name      string
-	withTLS   bool
-	tlsConfig *tls.Config
-	//readerChannel chan models.AgentMessage // from this channel we can read all the data coming from the clients
-	//writerChannel chan []byte              // from this channel we can write all the data to the clients
-	conn *net.TCPListener
+	stopMutex       sync.Mutex
+	localAddr       string
+	localPort       string
+	name            string
+	withTLS         bool
+	tlsConfig       *tls.Config
+	envelopeChannel chan Envelope
+	conn            *net.TCPListener
 }
 
 // this is the module responsible for setting up a communication channel (TCP or UDP)
 // where the data (protobuf, or JSON) can be exchanged
 
-func NewTCPServer(ip, port, serverName string, withTLS bool) (*tcpServer, error) {
+func NewTCPServer(ip, port, serverName string, withTLS bool, envelopeChannel chan Envelope) (*tcpServer, error) {
 
 	server := tcpServer{
-		localAddr: ip,
-		localPort: port,
-		name:      serverName,
-		withTLS:   withTLS,
+		localAddr:       ip,
+		localPort:       port,
+		name:            serverName,
+		withTLS:         withTLS,
+		envelopeChannel: envelopeChannel,
 	}
 
 	if withTLS {
@@ -188,6 +188,7 @@ command_loop:
 
 		// read the command sent from the client, which is in the buffer
 		line, err := reader.ReadLine()
+		log.Infof("%s: %s", clientId, line)
 
 		// parse the command line
 		command = *ParseCmd(line)
@@ -229,6 +230,7 @@ command_loop:
 
 			// resent the client state for the sequence of commands
 			client.reset()
+			client.writeData("250 OK")
 			break
 		case STARTTLS:
 			// Init a new TLS connection. I need a *tls.Conn type
@@ -257,13 +259,13 @@ command_loop:
 			break
 		case HELO:
 			if err := client.verifyHost(command.Argument); err != nil {
-				log.Errorln("Suspicious connection...continuing nonetheless")
+				log.Warnf("Suspicious connection from: %s; continuing nonetheless", clientId)
 			}
 			client.writeData(fmt.Sprintf("250 %s Hello %v", s.name, client.remoteAddress))
 			break
 		case EHLO:
 			if err := client.verifyHost(command.Argument); err != nil {
-				log.Errorln("Suspicious connection...continuing nonetheless")
+				log.Warnf("Suspicious connection from: %s; continuing nonetheless", clientId)
 			}
 
 			client.writeData(fmt.Sprintf("250-%s Hello %v", s.name, client.remoteAddress))
@@ -317,9 +319,9 @@ command_loop:
 			client.writeData("250 Okay, I'll believe you for now")
 			break
 		case DATA:
+			envelope.MarkInDataMode()
 			client.writeData("354 Send away")
 			break
-			//}
 		case QUIT:
 			client.writeData(kClosingConnection)
 			break command_loop
@@ -354,7 +356,10 @@ func (s *tcpServer) decrementConnectionCounter(clientId string) {
 	clientMutex.Unlock()
 }
 
-func (s *tcpServer) queueForDelivery(e envelope) {
+func (s *tcpServer) queueForDelivery(e Envelope) {
+	if s.envelopeChannel != nil {
+		s.envelopeChannel <- e
+	}
 
 }
 

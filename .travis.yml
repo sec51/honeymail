@@ -5,6 +5,7 @@ go:
 
 install:  
   - go get github.com/Sirupsen/logrus  
+  - go get github.com/boltdb/bolt/...
 
 script:
   - go test -tags=integration -v ./...

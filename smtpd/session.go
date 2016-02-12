@@ -117,15 +117,8 @@ func (s *clientSession) needsToQuit() bool {
 	return s.state == sQuit
 }
 
-// // this function verifies whether the sequence of command was called in the right order
-// func (s *clientSession) validate(Command cmd) error {
-
-// }
-
 // this is used to verify that the current command is executed in the proper order
 func (s *clientSession) verifyState(cmd Command) error {
-
-	fmt.Println(s.state.String())
 
 	switch cmd {
 	case HELO:
@@ -164,8 +157,9 @@ func (s *clientSession) markState(cmd Command) {
 		s.state = sRcpt
 	case DATA:
 		s.state = sData
+	case RSET:
+		s.state = sInitial
 	case QUIT:
 		s.state = sQuit
 	}
-	fmt.Println("Marked as:", s.state)
 }
