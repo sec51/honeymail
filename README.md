@@ -2,7 +2,24 @@
 
 ### SMTP honeypot
 
-STATUS: work in progress - NOT ready for prime time.
+UPDATE: the project is being actively developed. Here a list of some of the features which have been implemented, but not pushed to master yet.
+
+- [x] Automatically extract several information from the email, like: list of urls, source domain, country, attachments, email parts (HTML or TXT) and more
+- [x] Email storage to BOLTDB, with the possibility to add different storage backends (by implementing the storage interface)
+- [x] API to retrieve the stored emails in a JSON format for further analysis or to display it in a web UI
+
+### Status
+
+work in progress - NOT ready for prime time.
+
+### Dependencies
+
+```
+  - go get github.com/Sirupsen/logrus  
+  - go get github.com/boltdb/bolt/...
+  - go get github.com/oschwald/geoip2-golang
+  - go get github.com/mvdan/xurls
+```
 
 ### License
 
