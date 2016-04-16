@@ -6,6 +6,8 @@ go:
 install:  
   - go get github.com/Sirupsen/logrus  
   - go get github.com/boltdb/bolt/...
+  - go get github.com/oschwald/geoip2-golang
+  - go get github.com/mvdan/xurls
 
 script:
   - go test -tags=integration -v ./...

@@ -1,4 +1,4 @@
-package smtpd
+package envelope
 
 import (
 	"crypto/sha1"

@@ -4,27 +4,34 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/sec51/goconf"
 	"strconv"
 	"strings"
 	"unicode"
 )
 
 var (
-	kCommandNotRecognized  = "500 Command not recognized."
-	kSyntaxError           = "501 Syntax error in parameters or arguments"
-	kCommandNotImplemented = "502 Command not implemented"
-	kBadCommandSequence    = "503 Bad command sequence"
-	kGreeting              = "220 foo.com Simple Mail Transfer Service Ready"
-	kMessageAccepted       = "250 Message %s accepted for delivery"
-	kRecipientAccepted     = "250 Okay, I'll believe you for now"
-	kClosingConnection     = "221 foo.com Service closing transmission channel"
-	kRequestAborted        = "451 Requested action aborted: error in processing"
-	kLineTooLong           = "500 Line too long"
-	kPathTooLong           = "501 Path too long"
-	kTooManyRecipients     = "452 Too many recipients"
-	kTooMuchMailData       = "552 Too much mail data"
-	kFixedSize             = 26214400
-	kInsufficientStorage   = "452 Insufficient channel storage"
+	domainName             = goconf.AppConf.DefaultString("smtp.domain", "google.com")
+	kCommandNotRecognized  = fmt.Sprintf("500 %s", goconf.AppConf.DefaultString("smtp.cmd_not_recognized", "Command not recognized"))
+	kSyntaxError           = fmt.Sprintf("501 %s", goconf.AppConf.DefaultString("smtp.syntax_error", "Syntax error in parameters or arguments"))
+	kCommandNotImplemented = fmt.Sprintf("502 %s", goconf.AppConf.DefaultString("smtp.cmd_not_implemented", "Command not implemented"))
+	kBadCommandSequence    = fmt.Sprintf("503 %s", goconf.AppConf.DefaultString("smtp.bad_cmd_sequence", "Bad command sequence"))
+	// here the domain will be substituted if the string contains %s
+	kGreeting = fmt.Sprintf("220 %s", goconf.AppConf.DefaultString("smtp.greetings", "%s Simple Mail Transfer Service Ready"))
+	// here the automatically generated unique message id will be substituted if the string contains %s
+	kMessageAccepted     = fmt.Sprintf("250 %s", goconf.AppConf.DefaultString("smtp.message_accepted", "Message %s accepted for delivery"))
+	kRecipientAccepted   = fmt.Sprintf("250 %s", goconf.AppConf.DefaultString("smtp.recipient_accepted", "Okay, I'll believe you for now"))
+	kClosingConnection   = fmt.Sprintf("221 %s", goconf.AppConf.DefaultString("smtp.closing_connection", "Closing transmission channel"))
+	kRequestAborted      = fmt.Sprintf("451 %s", goconf.AppConf.DefaultString("smtp.request_aborted", "Requested action aborted: error in processing"))
+	kLineTooLong         = fmt.Sprintf("500 %s", goconf.AppConf.DefaultString("smtp.line_too_long", "Line too long"))
+	kPathTooLong         = fmt.Sprintf("501 %s", goconf.AppConf.DefaultString("smtp.path_too_long", "Path too long"))
+	kTooManyRecipients   = fmt.Sprintf("452 %s", goconf.AppConf.DefaultString("smtp.too_many_recipients", "Too many recipients"))
+	kTooMuchMailData     = fmt.Sprintf("552 %s", goconf.AppConf.DefaultString("smtp.mail_data_exceeded", "Mail data exceeded"))
+	kInsufficientStorage = fmt.Sprintf("452 %s", goconf.AppConf.DefaultString("smtp.insufficient_storage", "Insufficient storage"))
+	kSendData            = fmt.Sprintf("354 %s", goconf.AppConf.DefaultString("smtp.send_data_now", "Send away"))
+	kVerifyAddress       = fmt.Sprintf("252 %s", goconf.AppConf.DefaultString("smtp.verify_addr_response", "Send some mail, I'll try my best"))
+	kNoopCommand         = fmt.Sprintf("250 %s", goconf.AppConf.DefaultString("smtp.noop_response", "Yes I am still here"))
+	kFixedSize           = 26214400
 )
 
 // Define the SMTP command

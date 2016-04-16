@@ -1,3 +1,4 @@
+// This module creates the TCP SMTP daemon
 package smtpd
 
 import (
@@ -5,9 +6,12 @@ import (
 	"crypto/tls"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/sec51/goconf"
+	"github.com/sec51/honeymail/envelope"
 	"net"
 	"net/mail"
 	"net/textproto"
+	"strings"
 	"sync"
 	"time"
 )
@@ -22,7 +26,7 @@ var (
 	totalClientConnections = 0
 
 	// max amount of clients
-	maxClientConnections = 64000
+	maxClientConnections = goconf.AppConf.DefaultInt("smtp.max_client_connections", 64000)
 )
 
 type tcpServer struct {
@@ -32,14 +36,12 @@ type tcpServer struct {
 	name            string
 	withTLS         bool
 	tlsConfig       *tls.Config
-	envelopeChannel chan Envelope
+	envelopeChannel chan envelope.Envelope
 	conn            *net.TCPListener
 }
 
-// this is the module responsible for setting up a communication channel (TCP or UDP)
-// where the data (protobuf, or JSON) can be exchanged
-
-func NewTCPServer(ip, port, serverName string, withTLS bool, envelopeChannel chan Envelope) (*tcpServer, error) {
+// this is the module responsible for setting up the communication channe
+func NewTCPServer(ip, port, serverName, certPath, keyPath string, withTLS bool, envelopeChannel chan envelope.Envelope) (*tcpServer, error) {
 
 	server := tcpServer{
 		localAddr:       ip,
@@ -50,7 +52,7 @@ func NewTCPServer(ip, port, serverName string, withTLS bool, envelopeChannel cha
 	}
 
 	if withTLS {
-		cert, err := tls.LoadX509KeyPair("/path/to/cert", "/path/to/key")
+		cert, err := tls.LoadX509KeyPair(certPath, keyPath)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +87,7 @@ func (s *tcpServer) Start() {
 	s.conn = ln
 	s.stopMutex.Unlock()
 
-	log.Infoln("Mail server is listening on", s.localAddr, ":", s.localPort)
+	log.Infof("Honeymail server is listening on %s:%s", s.localAddr, s.localPort)
 
 	for {
 		if conn, err := ln.AcceptTCP(); err == nil {
@@ -128,6 +130,9 @@ func (s *tcpServer) handleTCPConnection(client *clientSession) {
 	clientId := client.conn.RemoteAddr().String()
 
 	// write the welcome message to the client
+	if strings.Contains(kGreeting, "%s") {
+		kGreeting = fmt.Sprintf(kGreeting, domainName)
+	}
 	if err := client.writeData(kGreeting); err != nil {
 		log.Println("Error writing greeting message to mail client", err)
 		return
@@ -138,7 +143,7 @@ func (s *tcpServer) handleTCPConnection(client *clientSession) {
 
 	// new mail client connection was successfully created
 	// create a new envelope because we expect the client to send the HELO/EHLO command
-	envelope := NewEnvelope(clientId)
+	envelopeData := envelope.NewEnvelope(clientId)
 
 	// new buffered reader
 	bufferedReader := bufio.NewReader(client.conn)
@@ -150,10 +155,10 @@ func (s *tcpServer) handleTCPConnection(client *clientSession) {
 command_loop:
 	for {
 
-		// we are receiving data
-		// so we need to keep reading it and we cannot read the input as a command
-		// therefore it needs to happen before the ReadLine
-		if envelope.isInDataMode() {
+		// we are receiving the email's data
+		// at this stage there should be not commands, just data.
+		// therefore it needs to happen before the ReadLine (used to read a command)
+		if client.isInDataMode() {
 			// check if the message ends and read all buffer
 			// if the message does not end, continue reading
 			dotBytes, err := reader.ReadDotBytes()
@@ -165,18 +170,21 @@ command_loop:
 			if err == nil && len(dotBytes) > 0 {
 
 				// assign the data read to the mailData struct
-				envelope.Message = dotBytes
+				envelopeData.Message = dotBytes
 
-				// write back to the client
-				client.writeData(fmt.Sprintf(kMessageAccepted, envelope.Id))
+				// write back to the client that the data part succeeded
+				if strings.Contains(kMessageAccepted, "%s") {
+					kMessageAccepted = fmt.Sprintf(kMessageAccepted, domainName)
+				}
+				client.writeData(fmt.Sprintf(kMessageAccepted, envelopeData.Id))
 
-				// set the state as post data, so during the loop it does not eneter here again
-				envelope.MarkInPostDataMode()
+				// set the state as post data, so during the loop it does not enter here again
+				client.MarkInPostDataMode()
 
 				// queue the envelope for processing
 				// at this stage the client is allowed only to RSET or to QUIT
 				// dereference the envelope and send it
-				s.queueForDelivery(*envelope)
+				s.queueForDelivery(*envelopeData)
 
 				// continue the loop
 				continue
@@ -218,15 +226,15 @@ command_loop:
 			client.writeData("214 Go read http://cr.yp.to/smtp.html.")
 			break
 		case NOOP:
-			client.writeData("250 Yes I am still here")
+			client.writeData(kNoopCommand)
 			break
 		case VRFY:
-			client.writeData("252 Send some mail, I'll try my best")
+			client.writeData(kVerifyAddress)
 			break
 		case RSET:
-			// reset the envelope
-			envelope = nil
-			envelope = NewEnvelope(clientId)
+			// reset the envelopeData
+			envelopeData = nil
+			envelopeData = envelope.NewEnvelope(clientId)
 
 			// resent the client state for the sequence of commands
 			client.reset()
@@ -252,6 +260,11 @@ command_loop:
 			// any of the TLS functions anymore,
 			// I can convert tlsConn back in to a net.Conn type
 			client.tlsConn = tlsConn
+
+			// mark the envelopeData as securely delivered (we should check whether the STARTTLS command was issued before the MAIL FROM)
+			if !client.hasInitiatedMailTransaction() {
+				envelopeData.SecurelyDelivered = true
+			}
 
 			// defer closing of the connection
 			defer client.tlsConn.Close()
@@ -296,7 +309,7 @@ command_loop:
 				client.writeData(kRequestAborted)
 				continue
 			}
-			envelope.From = fromAddress
+			envelopeData.From = fromAddress
 			client.writeData(kRecipientAccepted)
 			break
 		case RCPTTO:
@@ -310,17 +323,16 @@ command_loop:
 			}
 
 			// the first add it to the TO the following to the forward
-			if envelope.To == nil {
-				envelope.To = toAddress
+			if envelopeData.To == nil {
+				envelopeData.To = toAddress
 			} else {
-				envelope.addForward(toAddress)
+				envelopeData.AddForward(toAddress)
 			}
 
-			client.writeData("250 Okay, I'll believe you for now")
+			client.writeData(kRecipientAccepted)
 			break
 		case DATA:
-			envelope.MarkInDataMode()
-			client.writeData("354 Send away")
+			client.writeData(kSendData)
 			break
 		case QUIT:
 			client.writeData(kClosingConnection)
@@ -356,7 +368,7 @@ func (s *tcpServer) decrementConnectionCounter(clientId string) {
 	clientMutex.Unlock()
 }
 
-func (s *tcpServer) queueForDelivery(e Envelope) {
+func (s *tcpServer) queueForDelivery(e envelope.Envelope) {
 	if s.envelopeChannel != nil {
 		s.envelopeChannel <- e
 	}

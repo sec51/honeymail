@@ -38,7 +38,7 @@ func NewClientSession(conn *net.TCPConn) *clientSession {
 	return &s
 }
 
-// verify the clinet provided hostname
+// verify the client provided hostname
 // we need to verify:
 // 1- MX presence
 // 2- SPF (TXT)
@@ -144,6 +144,10 @@ func (s *clientSession) verifyState(cmd Command) error {
 	return nil
 }
 
+func (s *clientSession) hasInitiatedMailTransaction() bool {
+	return s.calledMail
+}
+
 // advance the session to the next stage
 func (s *clientSession) markState(cmd Command) {
 
@@ -162,4 +166,12 @@ func (s *clientSession) markState(cmd Command) {
 	case QUIT:
 		s.state = sQuit
 	}
+}
+
+func (s *clientSession) MarkInPostDataMode() {
+	s.state = sPostData
+}
+
+func (s *clientSession) isInDataMode() bool {
+	return s.state == sData
 }
