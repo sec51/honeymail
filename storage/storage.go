@@ -59,7 +59,11 @@ func (s StorageService) ViewEnvelope(e *envelope.Envelope, envelopeId string) er
 		var err error
 		bucket := tx.Bucket(bucket())
 		data := bucket.Get([]byte(envelopeId))
-		e, err = envelope.EnvelopeFromBytes(data)
+		env, err := envelope.EnvelopeFromBytes(data)
+
+		// this is really ugly....
+		*e = *env
+
 		return err
 	})
 }
