@@ -1,6 +1,7 @@
 {
 	"ImportPath": "github.com/sec51/honeymail",
 	"GoVersion": "go1.6",
+	"GodepVersion": "v62",
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
@@ -8,9 +9,19 @@
 			"Rev": "ab7e46ea22bd379e660230844f96d20f1dabc21a"
 		},
 		{
+			"ImportPath": "github.com/astaxie/beego/config",
+			"Comment": "v1.6.0-9-gfbb98fb",
+			"Rev": "fbb98fbe1fe5f6a4209772b44e2547714992340c"
+		},
+		{
 			"ImportPath": "github.com/boltdb/bolt",
 			"Comment": "v1.0-35-ga7d19d8",
 			"Rev": "a7d19d8cd50cb700babad58d0643a4bb6ac8f36c"
+		},
+		{
+			"ImportPath": "github.com/julienschmidt/httprouter",
+			"Comment": "v1.1-16-gabb0dc9",
+			"Rev": "abb0dc9f755ff0a9d818db28d9d8b9810066e2b5"
 		},
 		{
 			"ImportPath": "github.com/mvdan/xurls",
@@ -26,6 +37,10 @@
 			"ImportPath": "github.com/oschwald/maxminddb-golang",
 			"Comment": "v0.2.0-36-gb4a9635",
 			"Rev": "b4a963502ba01ab44940ee21d5539bd65c726924"
+		},
+		{
+			"ImportPath": "github.com/sec51/goconf",
+			"Rev": "7522ddf88206c98ee4ce560eaa99c54d1954f46b"
 		}
 	]
 }

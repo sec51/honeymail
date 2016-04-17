@@ -10,16 +10,34 @@ UPDATE: the project is being actively developed. Here a list of some of the feat
 
 ### Status
 
-work in progress - NOT ready for prime time.
+**Work in progress.**
+This honeypot has been tested by **Sec51** however **we cannot guarantee that it's bug free!**
+Attackers may be able to gain access to your honeypot in case of severe bug. **Use at your own risk !**
+We are not responsible for any damage caused by this software. For more information see the license.
+
+### How to run it:
+
+1) Configure your remote ip address or ip address list in the `conf/development.conf` or `conf/production.conf` INI config file.
+This will allow only your IP to connect to the API.
+
+2) Run the binary via:
+
+`setcap 'cap_net_bind_service=+ep' honeymail`
+
+3) Access the api via:
+
+
+To see today's emails:
+
+- `/api/emails`
+
+To see a spefici email (you can find the id from the list return from /api/emails):
+
+- `/api/email?id=49689cfcb7fcbf83ed95df3a65ae6d9047678ca1`
 
 ### Dependencies
 
-```
-  - go get github.com/Sirupsen/logrus  
-  - go get github.com/boltdb/bolt/...
-  - go get github.com/oschwald/geoip2-golang
-  - go get github.com/mvdan/xurls
-```
+The project is now using go vendoring. So all dependencies are inside the `vendor` folder
 
 ### License
 
