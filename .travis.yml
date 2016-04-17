@@ -8,7 +8,7 @@ install:
   - go get github.com/boltdb/bolt/...
   - go get github.com/oschwald/geoip2-golang
   - go get github.com/mvdan/xurls
-  - go get github/sec51/goconf
+  - go get github.com/sec51/goconf
 
 script:
   - go test -tags=integration -v ./...
