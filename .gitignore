@@ -3,3 +3,5 @@ mail.db
 GeoLite2-City.mmdb
 envelope/.DS_Store
 .DS_Store
+smtp.crt
+smtp.key

@@ -123,6 +123,9 @@ func (s *tcpServer) Stop() error {
 // one which listen to the TLS port wanted
 func (s *tcpServer) handleTCPConnection(client *clientSession) {
 
+	// Count the amount of errors and if it exceeds a threshold close the connection
+	totalCommandErrors := 0
+
 	// close the connection in case this exists
 	defer client.conn.Close()
 
@@ -201,6 +204,15 @@ command_loop:
 			log.Errorln("CAUGHT error while parsing the command", err, line)
 
 			client.writeData(command.Response)
+
+			// count the amount of total command errors
+			totalCommandErrors = totalCommandErrors + 1
+
+			// close connection in case of 5 consecutive errors
+			if totalCommandErrors == 5 {
+				break command_loop
+			}
+
 			continue
 		}
 
@@ -243,6 +255,15 @@ command_loop:
 			var tlsConn *tls.Conn
 			tlsConn = tls.Server(client.conn, s.tlsConfig)
 
+			// Here is the trick. Since I do not need to access
+			// any of the TLS functions anymore,
+			// I can convert tlsConn back in to a net.Conn type
+			client.tlsConn = tlsConn
+
+			// Reset the buffered reader
+			bufferedReader = bufio.NewReader(client.tlsConn)
+			reader = textproto.NewReader(bufferedReader)
+
 			// run a handshake
 			// Verify on the RFC what the server is supposed to do when the TLS handshake fails
 			err := tlsConn.Handshake()
@@ -253,10 +274,6 @@ command_loop:
 			}
 
 			client.isTLS = true
-			// Here is the trick. Since I do not need to access
-			// any of the TLS functions anymore,
-			// I can convert tlsConn back in to a net.Conn type
-			client.tlsConn = tlsConn
 
 			// mark the envelopeData as securely delivered (we should check whether the STARTTLS command was issued before the MAIL FROM)
 			if !client.hasInitiatedMailTransaction() {

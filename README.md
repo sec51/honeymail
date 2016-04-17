@@ -17,15 +17,20 @@ We are not responsible for any damage caused by this software. For more informat
 
 ### How to run it:
 
-1) Configure your remote ip address or ip address list in the `conf/development.conf` or `conf/production.conf` INI config file.
-This will allow only your IP to connect to the API.
+1) Generate a public/private key via:
 
-2) Run the binary via:
+`openssl req -newkey rsa:2048 -nodes -keyout smtp.key -x509 -days 365 -out smtp.crt`
+
+2) Move the newly created certificates to a `cert` folder.
+
+3) Configure your remote ip address or ip address list in the `conf/development.conf` or `conf/production.conf` INI config file.
+This will allow only your IP to connect to the API. In addition set the path of the certificates.
+
+4) Run the binary via:
 
 `setcap 'cap_net_bind_service=+ep' honeymail`
 
-3) Access the api via:
-
+5) Access the api via:
 
 To see today's emails:
 
@@ -34,6 +39,8 @@ To see today's emails:
 To see a spefici email (you can find the id from the list return from /api/emails):
 
 - `/api/email?id=49689cfcb7fcbf83ed95df3a65ae6d9047678ca1`
+
+Please report any bugs you will encounter.
 
 ### Dependencies
 
