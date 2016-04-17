@@ -1,27 +1,30 @@
 [![Build Status](https://travis-ci.org/sec51/honeymail.svg?branch=master)](https://travis-ci.org/sec51/honeymail)
 ### Status
 
-**The project is being actively developed.**
-This honeypot has been tested by **Sec51** however **we cannot guarantee that it's bug free!**
-Attackers may be able to gain access to your honeypot in case of severe bug. **Use at your own risk !**
-We are not responsible for any damage caused by this software. For more information see the license.
+**The project is being actively developed.**  
+This honeypot has been tested by **Sec51** however **we cannot guarantee that it's bug free!**  
+Attackers may be able to gain access to your honeypot server in case of severe bugs.  
+**Use at your own risk !**  
+We are not responsible for any damages caused by this software.  
+For more information see the license.
 
 ### SMTP honeypot
 
-Here a list of features of this smtp and smtps honeypot so far:
+Here a list of features developed so far:
 
 - [x] Configurable response messages to avoid honeypot detection.
 - [x] Support for STARTTLS
 - [X] Support for TLS
 - [X] Storage of emails in a BoltDB file, separated by day.
 - [X] API to retrieve today's emails and specific email via its id. (API is under heavy development to add additional capabilities)
-- [x] Automatically extract several information from the email, like: list of urls, source domain, country, attachments, email parts (HTML or TXT) and SHA256 hash of several information.
+- [x] Automatically extracts several information from the email, like: list of urls, source domain, country, attachments, email parts (HTML or TXT).
+- [x] Sha256 hash of email parts and fields like: FROM, TO, CC, attachments.
 
 ### Future development
 
-- [ ] Process the attachment with YARA and Cuckoo to automatically create yara rules
+- [ ] Process the attachments with YARA and Cuckoo to automatically create yara rules
 - [ ] Create a web UI to visualize the stored information
-- [ ] Improve the API and allow to browse different days and to retrieve an email via SHA256 hash of its parts
+- [ ] Improve the API and allow to browse different days and to retrieve an email via the SHA256 hash of its parts
 
 ### How to run it:
 
