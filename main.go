@@ -31,6 +31,7 @@ func main() {
 	ip := goconf.AppConf.DefaultString("smtp.listen_to", "0.0.0.0")
 	serverName := goconf.AppConf.DefaultString("smtp.server_name", "localhost")
 	smtpPort := goconf.AppConf.DefaultString("smtp.port", "10025")
+	smtpSecurePort := goconf.AppConf.DefaultString("smtp.secure_port", "10026")
 	certificate := goconf.AppConf.DefaultString("smtp.tls.public_key", "")
 	privateKey := goconf.AppConf.DefaultString("smtp.tls.private_key", "")
 
@@ -82,7 +83,7 @@ func main() {
 	// ============================
 
 	withTLS := certificate != "" && privateKey != ""
-	server, err := smtpd.NewTCPServer(ip, smtpPort, serverName, certificate, privateKey, withTLS, envelopeChannel)
+	server, err := smtpd.NewTCPServer(ip, smtpPort, smtpSecurePort, serverName, certificate, privateKey, withTLS, envelopeChannel)
 	if err != nil {
 		log.Fatal(err)
 	}

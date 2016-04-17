@@ -49,7 +49,7 @@ type MailMessage struct {
 	Headers mail.Header
 }
 
-func NewEnvelope(clientId string) *Envelope {
+func NewEnvelope(clientId string, isConnectionSecure bool) *Envelope {
 
 	// set the clientId as remote ip string
 	host, port, errSplit := net.SplitHostPort(clientId)
@@ -64,6 +64,7 @@ func NewEnvelope(clientId string) *Envelope {
 	md.RemoteIp = host
 	md.RemotePort = port
 	md.Forward = []*mail.Address{}
+	md.SecurelyDelivered = isConnectionSecure
 	md.Timestamp = time.Now().UTC()
 	return &md
 }

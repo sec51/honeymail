@@ -12,14 +12,14 @@ type clientSession struct {
 	hostname      string
 	remoteAddress string
 	remotePort    string
-	conn          *net.TCPConn // the connection with the client
+	conn          net.Conn // the connection with the client
 	tlsConn       *tls.Conn
 	state         clientSessionState
 	isTLS         bool //indicate whether the client upgraded successfully to TLS
 	calledMail    bool
 }
 
-func NewClientSession(conn *net.TCPConn) *clientSession {
+func NewClientSession(conn net.Conn, isSecure bool) *clientSession {
 
 	host, port, errSplit := net.SplitHostPort(conn.RemoteAddr().String())
 	if errSplit != nil {
@@ -35,6 +35,7 @@ func NewClientSession(conn *net.TCPConn) *clientSession {
 	s.remotePort = port
 	s.state = sInitial
 	s.calledMail = false
+	s.isTLS = isSecure
 	return &s
 }
 

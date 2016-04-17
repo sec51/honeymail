@@ -33,19 +33,22 @@ type tcpServer struct {
 	stopMutex       sync.Mutex
 	localAddr       string
 	localPort       string
+	localSecurePort string
 	name            string
 	withTLS         bool
 	tlsConfig       *tls.Config
 	envelopeChannel chan envelope.Envelope
 	conn            *net.TCPListener
+	tlsConn         *net.Listener
 }
 
 // this is the module responsible for setting up the communication channe
-func NewTCPServer(ip, port, serverName, certPath, keyPath string, withTLS bool, envelopeChannel chan envelope.Envelope) (*tcpServer, error) {
+func NewTCPServer(ip, port, securePort, serverName, certPath, keyPath string, withTLS bool, envelopeChannel chan envelope.Envelope) (*tcpServer, error) {
 
 	server := tcpServer{
 		localAddr:       ip,
 		localPort:       port,
+		localSecurePort: securePort,
 		name:            serverName,
 		withTLS:         withTLS,
 		envelopeChannel: envelopeChannel,
@@ -67,8 +70,7 @@ func NewTCPServer(ip, port, serverName, certPath, keyPath string, withTLS bool, 
 
 }
 
-// this is a blocking call
-func (s *tcpServer) Start() {
+func startTCP(s *tcpServer) {
 
 	addr, err := net.ResolveTCPAddr("tcp", s.localAddr+":"+s.localPort)
 
@@ -91,24 +93,75 @@ func (s *tcpServer) Start() {
 
 	for {
 		if conn, err := ln.AcceptTCP(); err == nil {
+			log.Infoln("Client connected via TCP")
 			// we accept a maximum of 6400 concurrent connections
 			// each agent creates 1 connection, therefore it should be enough for handling up to 6400 agents
 			clientMutex.Lock()
-			if totalClientConnections >= maxClientConnections {
+			if totalClientConnections >= totalClientConnections+1 {
 				log.Errorln("Too many connections from mail clients. Stopped accepting new connections.")
 				continue
 			}
 			clientMutex.Unlock()
 
 			// otherwise accept the connection
-			log.Infoln("Amount of mail client connections:", totalClientConnections)
+			log.Infoln("Amount of mail client connections:", totalClientConnections+1)
 
 			// set a read timeout
 			conn.SetReadDeadline(time.Now().Add(4 * time.Minute))
-			go s.handleTCPConnection(NewClientSession(conn))
+			go s.handleTCPConnection(NewClientSession(conn, false))
 
 		}
 	}
+
+}
+
+func startTLS(s *tcpServer) {
+
+	// we cannot start a TLS server without certificates
+	if s.tlsConfig == nil {
+		return
+	}
+
+	ln, err := tls.Listen("tcp", s.localAddr+":"+s.localSecurePort, s.tlsConfig)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// assign the conn to stop the server
+	s.stopMutex.Lock()
+	s.tlsConn = &ln
+	s.stopMutex.Unlock()
+
+	log.Infof("Honeymail TLS server is listening on %s:%s", s.localAddr, s.localSecurePort)
+
+	for {
+		if conn, err := ln.Accept(); err == nil {
+			log.Infoln("Client connected via TLS")
+			// we accept a maximum of 6400 concurrent connections
+			// each agent creates 1 connection, therefore it should be enough for handling up to 6400 agents
+			clientMutex.Lock()
+			if totalClientConnections >= totalClientConnections+1 {
+				log.Errorln("Too many connections from mail clients. Stopped accepting new connections.")
+				continue
+			}
+			clientMutex.Unlock()
+
+			// otherwise accept the connection
+			log.Infoln("Amount of mail client connections:", totalClientConnections+1)
+
+			// set a read timeout
+			conn.SetReadDeadline(time.Now().Add(4 * time.Minute))
+			go s.handleTCPConnection(NewClientSession(conn, true))
+
+		}
+	}
+
+}
+
+// this is a blocking call
+func (s *tcpServer) Start() {
+	go startTLS(s)
+	startTCP(s)
 }
 
 func (s *tcpServer) Stop() error {
@@ -146,7 +199,7 @@ func (s *tcpServer) handleTCPConnection(client *clientSession) {
 
 	// new mail client connection was successfully created
 	// create a new envelope because we expect the client to send the HELO/EHLO command
-	envelopeData := envelope.NewEnvelope(clientId)
+	envelopeData := envelope.NewEnvelope(clientId, client.isTLS)
 
 	// new buffered reader
 	bufferedReader := bufio.NewReader(client.conn)
@@ -243,7 +296,7 @@ command_loop:
 		case RSET:
 			// reset the envelopeData
 			envelopeData = nil
-			envelopeData = envelope.NewEnvelope(clientId)
+			envelopeData = envelope.NewEnvelope(clientId, client.isTLS)
 
 			// resent the client state for the sequence of commands
 			client.reset()
