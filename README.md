@@ -1,19 +1,27 @@
 [![Build Status](https://travis-ci.org/sec51/honeymail.svg?branch=master)](https://travis-ci.org/sec51/honeymail)
-
-### SMTP honeypot
-
-UPDATE: the project is being actively developed. Here a list of some of the features which have been implemented, but not pushed to master yet.
-
-- [x] Automatically extract several information from the email, like: list of urls, source domain, country, attachments, email parts (HTML or TXT) and more
-- [x] Email storage to BOLTDB, with the possibility to add different storage backends (by implementing the storage interface)
-- [x] API to retrieve the stored emails in a JSON format for further analysis or to display it in a web UI
-
 ### Status
 
-**Work in progress.**
+**The project is being actively developed.**
 This honeypot has been tested by **Sec51** however **we cannot guarantee that it's bug free!**
 Attackers may be able to gain access to your honeypot in case of severe bug. **Use at your own risk !**
 We are not responsible for any damage caused by this software. For more information see the license.
+
+### SMTP honeypot
+
+Here a list of features of this smtp and smtps honeypot so far:
+
+- [x] Configurable response messages to avoid honeypot detection.
+- [x] Support for STARTTLS
+- [X] Support for TLS
+- [X] Storage of emails in a BoltDB file, separated by day.
+- [X] API to retrieve today's emails and specific email via its id. (API is under heavy development to add additional capabilities)
+- [x] Automatically extract several information from the email, like: list of urls, source domain, country, attachments, email parts (HTML or TXT) and SHA256 hash of several information.
+
+### Future development
+
+- [ ] Process the attachment with YARA and Cuckoo to automatically create yara rules
+- [ ] Create a web UI to visualize the stored information
+- [ ] Improve the API and allow to browse different days and to retrieve an email via SHA256 hash of its parts
 
 ### How to run it:
 
@@ -44,7 +52,7 @@ Please report any bugs you will encounter.
 
 ### Dependencies
 
-The project is now using go vendoring. So all dependencies are inside the `vendor` folder
+The project is now using go vendoring. So all dependencies are inside the `vendor` folder.
 
 ### License
 
