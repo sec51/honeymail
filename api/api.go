@@ -15,7 +15,7 @@ func (c *APIController) TodayEmail(w http.ResponseWriter, r *http.Request) {
 	envs, err := storageService.ViewTodayEnvelopes()
 
 	if err != nil {
-		c.Error500(err.Error(), w, r)
+		c.Error500(err, w, r)
 		return
 	}
 
@@ -31,7 +31,7 @@ func (c *APIController) Email(w http.ResponseWriter, r *http.Request) {
 	envs, err := storageService.GetEnvelope(id)
 
 	if err != nil {
-		c.Error500(err.Error(), w, r)
+		c.Error500(err, w, r)
 		return
 	}
 

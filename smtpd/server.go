@@ -173,9 +173,6 @@ command_loop:
 				envelopeData.Message = dotBytes
 
 				// write back to the client that the data part succeeded
-				if strings.Contains(kMessageAccepted, "%s") {
-					kMessageAccepted = fmt.Sprintf(kMessageAccepted, domainName)
-				}
 				client.writeData(fmt.Sprintf(kMessageAccepted, envelopeData.Id))
 
 				// set the state as post data, so during the loop it does not enter here again

@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 )
@@ -28,7 +29,7 @@ func (c SimpleController) JSON(data interface{}, w http.ResponseWriter, r *http.
 
 	if err != nil {
 		log.Printf("JSON marshalling error: %s", err)
-		c.Error500(err.Error(), w, r)
+		c.Error500(err, w, r)
 		return
 	}
 
@@ -40,6 +41,10 @@ func (c SimpleController) JSON(data interface{}, w http.ResponseWriter, r *http.
 	_, err = w.Write(content)
 }
 
-func (c SimpleController) Error500(errorString string, w http.ResponseWriter, r *http.Request) {
-	http.Error(w, errorString, http.StatusInternalServerError)
+func (c SimpleController) Error500(err error, w http.ResponseWriter, r *http.Request) {
+	if err == io.EOF {
+		http.Error(w, "Item not found", http.StatusInternalServerError)
+		return
+	}
+	http.Error(w, err.Error(), http.StatusInternalServerError)
 }

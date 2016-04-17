@@ -1,0 +1,45 @@
+From: Silenteh <silenteh@example.com>
+X-Pgp-Agent: GPGMail 2.6b2
+Content-Type: multipart/signed; boundary="Apple-Mail=_C2CBE766-BA10-4969-8CFB-ED391B3CAD9D"; protocol="application/pgp-signature"; micalg=pgp-sha512
+Subject: xxxxxx
+Date: Sat, 16 Apr 2016 23:58:11 +0200
+Message-Id: <4364139B-F4AB-404D-B11E-2F2F0DD6880D@example.com>
+To: Sebastian <silenteh@gmail.com>
+Mime-Version: 1.0 (Mac OS X Mail 9.3 \(3124\))
+X-Mailer: Apple Mail (2.3124)
+
+
+--Apple-Mail=_C2CBE766-BA10-4969-8CFB-ED391B3CAD9D
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=us-ascii
+
+vvvvvv
+
+--Apple-Mail=_C2CBE766-BA10-4969-8CFB-ED391B3CAD9D
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename=signature.asc
+Content-Type: application/pgp-signature;
+	name=signature.asc
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - https://gpgtools.org
+
+iQIcBAEBCgAGBQJXErV3AAoJELoKmNkwxyv/HEsP/jBxlSOOKtLkQIPeDXPovw5b
+ZX2iwPcTBNBNjLyBqfLmNTQmkB2Oxs0HyiETTPmeck6yEqW+oyG+S45f2fMMDUyj
+6EAI5PvVRVPQchjs/XN0wdj4fHMWxiNS18fq3W1/ml5Q6/dzXjx7rXWDJG3TQezw
+2oXAT1fiTEM18/rz5uZfcbUevs8qb5a2mbYXlcPqwFoTuyD51qbGIvsgdEwEWrYW
+xMUfD3764kP3DbjT4xKg9LcXgqJ3W54IQ5fIdi9w2Ow4sxNZDKaTWnMV8PojRLkT
+97EMTQZOfO8l7wXouimBGpyDcQ3h1pmTiqDWXpEuMStW89HvBrm2h2N4yl3EH4fR
+g148GbZzQWr+MeSLvcNTR+6P4lhuHQiACtuvA0CgWycTErBKGE89gb8tSllZWYO4
++D1fs+pYncSc9AXF3hdR7sJmpRp0hjDUqk/qZP+m+Qpp4JVN7n37bwizZzHhI4bk
+hlbEPXKXV4zt5Q5u6e/doeHRylXZHrBsxcO24JBASBWJ9HJrGjK9xWuRcWGDR1jV
+1ldjAuET4YRgFu9CbivyTRUjug93xnqyDe2rn8ejGRq8FpIf6OFDLu8gyruwtong
+v8jGXzBSR7pil/k9C+qAzl77fm7CgWRxhyb9wnU5eQbmFXhcnbU3om0oZJZ0FegS
+Q10wdrq88e6KUYOcF4oz
+=2Yz3
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_C2CBE766-BA10-4969-8CFB-ED391B3CAD9D--

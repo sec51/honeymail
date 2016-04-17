@@ -26,23 +26,22 @@ func init() {
 }
 
 type Envelope struct {
-	Id         string // unique envelope ID
-	RemoteIp   string // remote ip of the connection
-	RemotePort string // remote port of the connection
-	From       *mail.Address
-	To         *mail.Address
-	Forward    []*mail.Address
-	Message    []byte // contains the full message converted to bytes
-	//MessageHeaders    mail.Header // contains the headers of the message
-	Timestamp         time.Time
-	SecurelyDelivered bool
-	Stats             *EnvelopeStats
+	Id                string          // unique envelope ID
+	RemoteIp          string          // remote ip of the connection
+	RemotePort        string          // remote port of the connection
+	From              *mail.Address   // From email info
+	To                *mail.Address   // To Email info
+	Forward           []*mail.Address // Forward array of email info
+	Timestamp         time.Time       // Timestamp when the message was received
+	SecurelyDelivered bool            // If it was securely delivered
+	Stats             *EnvelopeStats  // Additional statistics about the message
+	Body              []byte          // Body of the message
+	Headers           mail.Header     // headers of the message
+	Message           []byte          // contains the full original message converted to bytes
 
 	// this is the parse mail message
+	// needed to extract additional info but not exported because it's a copy of Message field
 	mailMessage mail.Message
-	// io.Reader cannot be serialized therefore we have to create a separet object to hold the original email
-	// information
-	OriginalMail MailMessage
 }
 
 type MailMessage struct {
@@ -66,7 +65,6 @@ func NewEnvelope(clientId string) *Envelope {
 	md.RemotePort = port
 	md.Forward = []*mail.Address{}
 	md.Timestamp = time.Now().UTC()
-	md.OriginalMail = MailMessage{}
 	return &md
 }
 
@@ -114,31 +112,37 @@ func (md *Envelope) CalculateStats() {
 	if err := md.generateMailMessage(); err == nil {
 		// TODO: parse the Bcc header and add all the info to the stats
 
+		// extract the message parts
+		parts, _ := parseEmailParts(md.mailMessage)
+		for _, part := range parts {
+			if part.IsAttachment {
+				md.Stats.Attachments = append(md.Stats.Attachments, part)
+			} else {
+				md.Stats.EmailParts = append(md.Stats.EmailParts, part)
+			}
+		}
+
 		// extract the Subject
 		md.Stats.Subject = md.mailMessage.Header.Get("Subject")
+
+		// IMPORTANT !!!!
+		// This is needed again, otherwise the reader has reached the end and no data is extracted !
+		// There is probably a better way of doing it...
+		md.generateMailMessage()
+		// ==========
 
 		// extract the body
 		if body, err := ioutil.ReadAll(md.mailMessage.Body); err == nil {
 			// convert to a string
 			bodyString := string(body)
-			log.Infoln(bodyString)
-
-			// assign the body to the OriginalMessage
-			md.OriginalMail.Body = body
-			md.OriginalMail.Headers = md.mailMessage.Header
+			log.Infoln("Body", bodyString)
 
 			// extract the URLs
 			md.Stats.URLs = append(md.Stats.URLs, xurls.Strict.FindAllString(bodyString, -1)...)
 
-			// extract the message parts
-			parts, _ := parseEmailParts(md.mailMessage)
-			for _, part := range parts {
-				if part.IsAttachment {
-					md.Stats.Attachments = append(md.Stats.Attachments, part)
-				} else {
-					md.Stats.EmailParts = append(md.Stats.EmailParts, part)
-				}
-			}
+			// assign the body to the OriginalMessage
+			md.Body = body
+			md.Headers = md.mailMessage.Header
 
 		} else {
 			log.Errorf("Error parsgin the body of the message %s with error: %s", md.Id, err)
