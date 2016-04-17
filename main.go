@@ -83,12 +83,12 @@ func main() {
 	// ============================
 
 	withTLS := certificate != "" && privateKey != ""
-	server, err := smtpd.NewTCPServer(ip, smtpPort, smtpSecurePort, serverName, certificate, privateKey, withTLS, envelopeChannel)
+	smtpServer, err := smtpd.NewTCPServer(ip, smtpPort, smtpSecurePort, serverName, certificate, privateKey, withTLS, envelopeChannel)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go server.Start()
+	smtpServer.Start()
 
 	// API
 	apiService := api.NewAPIService(apiHost, apiPort, storageService)

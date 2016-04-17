@@ -158,10 +158,10 @@ func startTLS(s *tcpServer) {
 
 }
 
-// this is a blocking call
+// this is a non blocking call
 func (s *tcpServer) Start() {
 	go startTLS(s)
-	startTCP(s)
+	go startTCP(s)
 }
 
 func (s *tcpServer) Stop() error {
