@@ -30,12 +30,11 @@ func NewAPIService(host, port string, storageSVC storage.StorageInterface) *apiS
 func (s *apiService) Start() {
 
 	apiController := new(APIController)
-	todayEmailsHandler := http.HandlerFunc(apiController.TodayEmail)
 	emailHandler := http.HandlerFunc(apiController.Email)
 
 	// ROUTER
 	router := httprouter.New()
-	router.Handler("GET", "/api/emails", todayEmailsHandler)
+	router.GET("/api/emails/:date", apiController.DateEmails)
 	router.Handler("GET", "/api/email", emailHandler)
 
 	// static file

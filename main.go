@@ -13,17 +13,6 @@ import (
 	"github.com/sec51/honeymail/storage"
 )
 
-// Flags
-// var (
-// 	dbPath      = flag.String("dbPath", "GeoLite2-City.mmdb", "Full path of the Geo Lite City mmdb file")
-// 	ip          = flag.String("ip", "0.0.0.0", "Listen on this address")
-// 	serverName  = flag.String("serverName", "localhost", "Server name to expose to the world during the hello handshake")
-// 	smtpPort    = flag.String("smtpPort", "10025", "Standard SMTP PORT")
-// 	smtpPortTLS = flag.String("smtpPortTLS", "587", "TLS smtp port for submission")
-// 	certificate = flag.String("certificate", "", "TLS public certificate")
-// 	privateKey  = flag.String("privateKey", "", "TLS private key")
-// )
-
 func main() {
 
 	// define configurations

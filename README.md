@@ -19,12 +19,14 @@ Here a list of features developed so far:
 - [X] API to retrieve today's emails and specific email via its id. (API is under heavy development to add additional capabilities)
 - [x] Automatically extracts several information from the email, like: list of urls, source domain, country, attachments, email parts (HTML or TXT).
 - [x] Sha256 hash of email parts and fields like: FROM, TO, CC, attachments.
+- [x] API and allows to browse different days: `/api/emails/today` or `/api/emails/YYYY-MM-dd`
 
 ### Future development
 
 - [ ] Process the attachments with YARA and Cuckoo to automatically create yara rules
 - [ ] Create a web UI to visualize the stored information
-- [ ] Improve the API and allow to browse different days and to retrieve an email via the SHA256 hash of its parts
+
+- [ ] Improve the API and allow to retrieve an email via the SHA256 hash of its parts (TO, FROM etc...)
 
 ### How to run it:
 

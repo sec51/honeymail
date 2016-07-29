@@ -3,23 +3,49 @@ package api
 import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	"log"
 	"net/http"
+	"time"
 )
+
+const dateFormat = "2006-01-02"
 
 type APIController struct {
 	SimpleController
 }
 
-func (c *APIController) TodayEmail(w http.ResponseWriter, r *http.Request) {
+func (c *APIController) DateEmails(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
-	envs, err := storageService.ViewTodayEnvelopes()
+	date := p.ByName("date")
+	log.Println(date)
 
-	if err != nil {
-		c.Error500(err, w, r)
+	switch date {
+	case "today", "":
+		envs, err := storageService.ViewTodayEnvelopes()
+		if err != nil {
+			c.Error500(err, w, r)
+			return
+		}
+		log.Printf("%v\n", envs)
+		c.JSON(&envs, w, r)
+		return
+
+	default:
+		parsedTime, err := time.Parse(dateFormat, date)
+		if err != nil {
+			c.Error500(err, w, r)
+			return
+		}
+
+		envs, err := storageService.ViewDateEnvelopes(parsedTime)
+		if err != nil {
+			c.Error500(err, w, r)
+			return
+		}
+		log.Printf("%v\n", envs)
+		c.JSON(&envs, w, r)
 		return
 	}
-
-	c.JSON(&envs, w, r)
 
 }
 
