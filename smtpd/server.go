@@ -60,9 +60,25 @@ func NewTCPServer(ip, port, securePort, serverName, certPath, keyPath string, wi
 			return nil, err
 		}
 		server.tlsConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			ClientAuth:   tls.VerifyClientCertIfGiven,
-			ServerName:   serverName}
+			Certificates:             []tls.Certificate{cert},
+			ClientAuth:               tls.VerifyClientCertIfGiven,
+			ServerName:               serverName,
+			MinVersion:               tls.VersionSSL30,
+			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+			PreferServerCipherSuites: true,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_RSA_WITH_RC4_128_SHA,
+				tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
+				tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+			},
+		}
 
 	}
 
@@ -335,6 +351,7 @@ command_loop:
 
 			// defer closing of the connection
 			defer client.tlsConn.Close()
+			client.tlsConn.Write([]byte("220 Ready to start TLS" + "\r\n"))
 
 			break
 		case HELO:
@@ -358,7 +375,7 @@ command_loop:
 
 			// we cannot advertise STARTTLS in case it was already
 			// or in case the connection happens already via TLS
-			if !s.withTLS && !client.isTLS {
+			if !s.withTLS || !client.isTLS {
 				client.writeData("250-STARTTLS")
 			}
 

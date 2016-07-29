@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
-	"log"
 	"net/http"
 	"time"
 )
@@ -17,7 +16,6 @@ type APIController struct {
 func (c *APIController) DateEmails(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 	date := p.ByName("date")
-	log.Println(date)
 
 	switch date {
 	case "today", "":
@@ -26,7 +24,6 @@ func (c *APIController) DateEmails(w http.ResponseWriter, r *http.Request, p htt
 			c.Error500(err, w, r)
 			return
 		}
-		log.Printf("%v\n", envs)
 		c.JSON(&envs, w, r)
 		return
 
@@ -42,7 +39,6 @@ func (c *APIController) DateEmails(w http.ResponseWriter, r *http.Request, p htt
 			c.Error500(err, w, r)
 			return
 		}
-		log.Printf("%v\n", envs)
 		c.JSON(&envs, w, r)
 		return
 	}

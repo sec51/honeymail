@@ -47,7 +47,11 @@ This will allow only your IP to connect to the API. In addition set the path of 
 
 To see today's emails:
 
-- `/api/emails`
+- `/api/emails/today`
+
+To see a specific date emails:
+
+- `/api/emails/2010-07-30`
 
 To see a spefici email (you can find the id from the list return from /api/emails):
 
