@@ -320,6 +320,7 @@ command_loop:
 			break
 		case STARTTLS:
 
+			client.writeData("220 Ready to start TLS")
 			// Init a new TLS connection. I need a *tls.Conn type
 			// so that I can do the Handshake()
 			var tlsConn *tls.Conn
