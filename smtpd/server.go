@@ -319,6 +319,7 @@ command_loop:
 			client.writeData("250 OK")
 			break
 		case STARTTLS:
+
 			// Init a new TLS connection. I need a *tls.Conn type
 			// so that I can do the Handshake()
 			var tlsConn *tls.Conn
@@ -333,14 +334,15 @@ command_loop:
 			bufferedReader = bufio.NewReader(client.tlsConn)
 			reader = textproto.NewReader(bufferedReader)
 
+			// The client initiate the handshake - so
 			// run a handshake
 			// Verify on the RFC what the server is supposed to do when the TLS handshake fails
-			err := tlsConn.Handshake()
-			if err != nil {
-				log.Errorln("Failed to handshake with the client a valid SSL connection")
-				client.writeData(kClosingConnection)
-				break command_loop
-			}
+			// err := tlsConn.Handshake()
+			// if err != nil {
+			// 	log.Errorln("Failed to handshake with the client a valid SSL connection")
+			// 	client.writeData(kClosingConnection)
+			// 	break command_loop
+			// }
 
 			client.isTLS = true
 
@@ -351,7 +353,7 @@ command_loop:
 
 			// defer closing of the connection
 			defer client.tlsConn.Close()
-			client.tlsConn.Write([]byte("220 Ready to start TLS" + "\r\n"))
+			client.tlsConn.Write([]byte("220 TLS Ready" + "\r\n"))
 
 			break
 		case HELO:
@@ -366,18 +368,19 @@ command_loop:
 			}
 
 			client.writeData(fmt.Sprintf("250-%s Hello %v", s.name, client.remoteAddress))
+
+			client.writeData("250-PIPELINING")
 			client.writeData(fmt.Sprintf("250-SIZE %d", kFixedSize))
 			//client.writeData("250-ENHANCEDSTATUSCODES")
-			client.writeData("250-PIPELINING")
-			client.writeData("250 8BITMIME")
 			client.writeData("250-VRFY")
 			client.writeData("250-HELP")
-
+			client.writeData("250-8BITMIME")
 			// we cannot advertise STARTTLS in case it was already
 			// or in case the connection happens already via TLS
 			if !s.withTLS || !client.isTLS {
 				client.writeData("250-STARTTLS")
 			}
+			client.writeData("250 SMTPUTF8")
 
 			// TODO: implement AUTH
 
