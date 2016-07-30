@@ -354,7 +354,6 @@ command_loop:
 
 			// defer closing of the connection
 			defer client.tlsConn.Close()
-			client.tlsConn.Write([]byte("220 TLS Ready" + "\r\n"))
 
 			break
 		case HELO:
