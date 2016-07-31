@@ -19,6 +19,11 @@ import (
 var (
 	// map which contains a mapping between the connection and the conversation between the server and the client
 	clientConnections = make(map[string]*clientSession)
+
+	// map which keeps a state of the connections from a specific IP.
+	// in case this IP tries to DDoS the server, then drop the connection attempts
+	ddosProtection = make(map[string]ddosAttempt)
+
 	// mutex needed to moodify the map
 	clientMutex sync.Mutex
 
@@ -27,7 +32,16 @@ var (
 
 	// max amount of clients
 	maxClientConnections = goconf.AppConf.DefaultInt("smtp.max_client_connections", 64000)
+	readTimeOut          = time.Duration(goconf.AppConf.DefaultInt("smtp.read_timeout", 10))
 )
+
+type ddosAttempt struct {
+	// last attempt to send an email
+	lockUntil time.Time
+
+	// total amount of attempts
+	totalAttempts int
+}
 
 type tcpServer struct {
 	stopMutex       sync.Mutex
@@ -86,6 +100,28 @@ func NewTCPServer(ip, port, securePort, serverName, certPath, keyPath string, wi
 
 }
 
+func isIpLockedDown(clientId string) bool {
+
+	clientMutex.Lock()
+	defer clientMutex.Unlock()
+
+	// check whether the client is tryin to make too many connection without concluding any
+	// usually the clients basically halt the process after sending the DATA command
+	if attempt, ok := ddosProtection[clientId]; ok {
+		// if the lock date is after now, means the account is still locked
+		if attempt.lockUntil.After(time.Now().UTC()) {
+			return true
+		} else {
+			// otherwise unlock it, by setting the counter to zero
+			attempt.totalAttempts = 0
+			return false
+		}
+	}
+
+	return false
+
+}
+
 func startTCP(s *tcpServer) {
 
 	addr, err := net.ResolveTCPAddr("tcp", s.localAddr+":"+s.localPort)
@@ -113,6 +149,7 @@ func startTCP(s *tcpServer) {
 			// we accept a maximum of 6400 concurrent connections
 			// each agent creates 1 connection, therefore it should be enough for handling up to 6400 agents
 			clientMutex.Lock()
+
 			if totalClientConnections >= totalClientConnections+1 {
 				log.Errorln("Too many connections from mail clients. Stopped accepting new connections.")
 				continue
@@ -123,7 +160,7 @@ func startTCP(s *tcpServer) {
 			log.Infoln("Amount of mail client connections:", totalClientConnections+1)
 
 			// set a read timeout
-			conn.SetReadDeadline(time.Now().Add(4 * time.Minute))
+			conn.SetReadDeadline(time.Now().Add(readTimeOut * time.Second))
 			go s.handleTCPConnection(NewClientSession(conn, false))
 
 		}
@@ -156,8 +193,10 @@ func startTLS(s *tcpServer) {
 			// we accept a maximum of 6400 concurrent connections
 			// each agent creates 1 connection, therefore it should be enough for handling up to 6400 agents
 			clientMutex.Lock()
+
 			if totalClientConnections >= totalClientConnections+1 {
 				log.Errorln("Too many connections from mail clients. Stopped accepting new connections.")
+				conn.Close()
 				continue
 			}
 			clientMutex.Unlock()
@@ -166,7 +205,7 @@ func startTLS(s *tcpServer) {
 			log.Infoln("Amount of mail client connections:", totalClientConnections+1)
 
 			// set a read timeout
-			conn.SetReadDeadline(time.Now().Add(4 * time.Minute))
+			conn.SetReadDeadline(time.Now().Add(readTimeOut * time.Minute))
 			go s.handleTCPConnection(NewClientSession(conn, true))
 
 		}
@@ -200,6 +239,12 @@ func (s *tcpServer) handleTCPConnection(client *clientSession) {
 
 	// get the client remote address
 	clientId := client.conn.RemoteAddr().String()
+
+	//check whether we need to disconnect the client because it is trying to ddos us
+	if isIpLockedDown(clientId) {
+		log.Println(clientId, "has attempted too many unsuccessful connections. Locked down.")
+		return
+	}
 
 	// write the welcome message to the client
 	if strings.Contains(kGreeting, "%s") {
@@ -254,6 +299,15 @@ command_loop:
 				// at this stage the client is allowed only to RSET or to QUIT
 				// dereference the envelope and send it
 				s.queueForDelivery(*envelopeData)
+
+				// at this point it means that the client successfully queued an email so update the
+				// ddos protection information
+				clientMutex.Lock()
+				if attempt, ok := ddosProtection[clientId]; ok {
+					// update the successful attempt and reset the counter
+					attempt.totalAttempts = 0
+				}
+				clientMutex.Unlock()
 
 				// continue the loop
 				continue
@@ -442,6 +496,24 @@ func (s *tcpServer) incrementConnectionCounter(clientId string, client *clientSe
 
 	// update the map and the total connections
 	clientMutex.Lock()
+
+	// ### simple ddos protection
+	// check if the client was already connected
+	if attempt, ok := ddosProtection[clientId]; ok {
+		// increment the total attempts
+		attempt.totalAttempts += 1
+		// if the client did too many attempts lock it out for 30 minutes
+		if attempt.totalAttempts >= 20 {
+			attempt.lockUntil = time.Now().Add(30 * time.Minute)
+		}
+	} else {
+		attempt := ddosAttempt{
+			totalAttempts: 1,
+		}
+		ddosProtection[clientId] = attempt
+	}
+
+	// connections only
 	totalClientConnections++
 	clientConnections[clientId] = client
 	clientMutex.Unlock()

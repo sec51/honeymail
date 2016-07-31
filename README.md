@@ -20,13 +20,14 @@ Here a list of features developed so far:
 - [x] Automatically extracts several information from the email, like: list of urls, source domain, country, attachments, email parts (HTML or TXT).
 - [x] Sha256 hash of email parts and fields like: FROM, TO, CC, attachments.
 - [x] API and allows to browse different days: `/api/emails/today` or `/api/emails/YYYY-MM-dd`
+- [x] Simple DDoS protection in case spammers try to establish many connections and never finish sending data.
 
 ### Future development
 
 - [ ] Process the attachments with YARA and Cuckoo to automatically create yara rules
 - [ ] Create a web UI to visualize the stored information
-
 - [ ] Improve the API and allow to retrieve an email via the SHA256 hash of its parts (TO, FROM etc...)
+- [ ] Extract additional configuration parameters which are now hard coded (Example: amount of times a client needs to fail to send emails before it gets locked down)
 
 ### How to run it:
 
