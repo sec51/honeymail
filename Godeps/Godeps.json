@@ -5,42 +5,50 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
-			"Comment": "v0.8.2-20-gab7e46e",
-			"Rev": "ab7e46ea22bd379e660230844f96d20f1dabc21a"
+			"Comment": "v0.10.0-28-ga283a10",
+			"Rev": "a283a10442df8dc09befd873fab202bf8a253d6a"
 		},
 		{
 			"ImportPath": "github.com/astaxie/beego/config",
-			"Comment": "v1.6.0-9-gfbb98fb",
-			"Rev": "fbb98fbe1fe5f6a4209772b44e2547714992340c"
+			"Comment": "v1.6.1-5-g88c5dfa",
+			"Rev": "88c5dfa6ead42e624c2e7d9e04eab6cb2d07412a"
 		},
 		{
 			"ImportPath": "github.com/boltdb/bolt",
-			"Comment": "v1.0-35-ga7d19d8",
-			"Rev": "a7d19d8cd50cb700babad58d0643a4bb6ac8f36c"
+			"Comment": "v1.2.1-15-g94c8db5",
+			"Rev": "94c8db596809690a3f7046fa83c7b0dda13a3222"
 		},
 		{
 			"ImportPath": "github.com/julienschmidt/httprouter",
-			"Comment": "v1.1-16-gabb0dc9",
-			"Rev": "abb0dc9f755ff0a9d818db28d9d8b9810066e2b5"
+			"Comment": "v1.1-31-gfb79d6a",
+			"Rev": "fb79d6a91d3e4a9ecb6d945b218d78fc0d9b1939"
 		},
 		{
 			"ImportPath": "github.com/mvdan/xurls",
-			"Comment": "v0.8.0-19-gb39c58e",
-			"Rev": "b39c58e79eaf4e564a68bb34ae545194988f90c2"
+			"Comment": "v0.9.0-3-g9178750",
+			"Rev": "9178750e3f8ef6451439213a5978d344a030c53f"
 		},
 		{
 			"ImportPath": "github.com/oschwald/geoip2-golang",
-			"Comment": "v0.1.0-23-gbf3c252",
-			"Rev": "bf3c2529e7f0619767568752f5155dd9c5125426"
+			"Comment": "v0.1.0-37-gccee6e9",
+			"Rev": "ccee6e9d9b1ee5cee16ac664bc1982952edfb13d"
 		},
 		{
 			"ImportPath": "github.com/oschwald/maxminddb-golang",
-			"Comment": "v0.2.0-36-gb4a9635",
-			"Rev": "b4a963502ba01ab44940ee21d5539bd65c726924"
+			"Comment": "v0.2.0-62-gf4aa557",
+			"Rev": "f4aa55714a3f843869ca9a38625e177a627c1ce6"
 		},
 		{
 			"ImportPath": "github.com/sec51/goconf",
 			"Rev": "7522ddf88206c98ee4ce560eaa99c54d1954f46b"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "a646d33e2ee3172a661fc09bca23bb4889a41bc8"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/windows",
+			"Rev": "a646d33e2ee3172a661fc09bca23bb4889a41bc8"
 		}
 	]
 }
