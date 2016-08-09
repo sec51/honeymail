@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/sec51/honeymail/config"
-	"github.com/sec51/honeymail/log"
+	log "github.com/sec51/honeymail/logging"
 	"github.com/sec51/honeymail/models"
 	"github.com/sec51/honeymail/utils"
 )

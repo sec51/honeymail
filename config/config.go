@@ -15,4 +15,6 @@ var (
 
 	PROCESS_IP_URL     = goconf.AppConf.String("url.process.ip")
 	PROCESS_EMAILS_URL = goconf.AppConf.String("url.process.email")
+
+	LOG_FILE = goconf.AppConf.String("log.file")
 )

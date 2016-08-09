@@ -1,7 +1,7 @@
 package processor
 
 import (
-	"log"
+	log "github.com/sec51/honeymail/logging"
 	"sync"
 
 	"github.com/sec51/honeymail/envelope"
@@ -52,7 +52,7 @@ func (p *ProcessorService) Start() {
 			// honeymaster
 			emailData, err := e.Serialize()
 			if err != nil {
-				log.Println(err)
+				log.Error.Println(err)
 			}
 			email := models.MakeEmail(e.RemoteIp, emailData)
 			p.honeymasterChannel <- email

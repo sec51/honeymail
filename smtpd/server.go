@@ -5,13 +5,14 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"github.com/sec51/goconf"
 	"github.com/sec51/honeymail/envelope"
+	log "github.com/sec51/honeymail/logging"
 	"github.com/sec51/honeymail/models"
 	"net"
 	"net/mail"
 	"net/textproto"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -131,13 +132,15 @@ func startTCP(s *tcpServer) {
 	addr, err := net.ResolveTCPAddr("tcp", s.localAddr+":"+s.localPort)
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Error.Println(err)
+		os.Exit(1)
 	}
 
 	ln, err := net.ListenTCP("tcp", addr)
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Error.Println(err)
+		os.Exit(1)
 	}
 
 	// assign the conn to stop the server
@@ -145,23 +148,23 @@ func startTCP(s *tcpServer) {
 	s.conn = ln
 	s.stopMutex.Unlock()
 
-	log.Infof("Honeymail server is listening on %s:%s", s.localAddr, s.localPort)
+	log.Info.Printf("Honeymail server is listening on %s:%s", s.localAddr, s.localPort)
 
 	for {
 		if conn, err := ln.AcceptTCP(); err == nil {
-			log.Infoln("Client connected via TCP")
+			log.Info.Println("Client connected via TCP")
 			// we accept a maximum of 6400 concurrent connections
 			// each agent creates 1 connection, therefore it should be enough for handling up to 6400 agents
 			clientMutex.Lock()
 
 			if totalClientConnections >= totalClientConnections+1 {
-				log.Errorln("Too many connections from mail clients. Stopped accepting new connections.")
+				log.Error.Println("Too many connections from mail clients. Stopped accepting new connections.")
 				continue
 			}
 			clientMutex.Unlock()
 
 			// otherwise accept the connection
-			log.Infoln("Amount of mail client connections:", totalClientConnections+1)
+			log.Info.Println("Amount of mail client connections:", totalClientConnections+1)
 
 			// set a read timeout
 			conn.SetReadDeadline(time.Now().Add(readTimeOut * time.Second))
@@ -181,7 +184,8 @@ func startTLS(s *tcpServer) {
 
 	ln, err := tls.Listen("tcp", s.localAddr+":"+s.localSecurePort, s.tlsConfig)
 	if err != nil {
-		log.Fatalln(err)
+		log.Error.Println(err)
+		os.Exit(1)
 	}
 
 	// assign the conn to stop the server
@@ -189,24 +193,24 @@ func startTLS(s *tcpServer) {
 	s.tlsConn = &ln
 	s.stopMutex.Unlock()
 
-	log.Infof("Honeymail TLS server is listening on %s:%s", s.localAddr, s.localSecurePort)
+	log.Info.Printf("Honeymail TLS server is listening on %s:%s", s.localAddr, s.localSecurePort)
 
 	for {
 		if conn, err := ln.Accept(); err == nil {
-			log.Infoln("Client connected via TLS")
+			log.Info.Println("Client connected via TLS")
 			// we accept a maximum of 6400 concurrent connections
 			// each agent creates 1 connection, therefore it should be enough for handling up to 6400 agents
 			clientMutex.Lock()
 
 			if totalClientConnections >= totalClientConnections+1 {
-				log.Errorln("Too many connections from mail clients. Stopped accepting new connections.")
+				log.Error.Println("Too many connections from mail clients. Stopped accepting new connections.")
 				conn.Close()
 				continue
 			}
 			clientMutex.Unlock()
 
 			// otherwise accept the connection
-			log.Infoln("Amount of mail client connections:", totalClientConnections+1)
+			log.Info.Println("Amount of mail client connections:", totalClientConnections+1)
 
 			// set a read timeout
 			conn.SetReadDeadline(time.Now().Add(readTimeOut * time.Minute))
@@ -247,7 +251,7 @@ func (s *tcpServer) handleTCPConnection(client *clientSession) {
 
 	//check whether we need to disconnect the client because it is trying to ddos us
 	if isIpLockedDown(clientId) {
-		log.Println(clientId, "has attempted too many unsuccessful connections. Locked down.")
+		log.Info.Println(clientId, "has attempted too many unsuccessful connections. Locked down.")
 		return
 	}
 
@@ -256,7 +260,7 @@ func (s *tcpServer) handleTCPConnection(client *clientSession) {
 		kGreeting = fmt.Sprintf(kGreeting, domainName)
 	}
 	if err := client.writeData(kGreeting); err != nil {
-		log.Println("Error writing greeting message to mail client", err)
+		log.Error.Println("Error writing greeting message to mail client", err)
 		return
 	}
 
@@ -324,12 +328,12 @@ command_loop:
 
 		// read the command sent from the client, which is in the buffer
 		line, err := reader.ReadLine()
-		log.Infof("%s: %s", clientId, line)
+		log.Info.Printf("%s: %s", clientId, line)
 
 		// parse the command line
 		command = *ParseCmd(line)
 		if command.Response != "" {
-			log.Errorln("CAUGHT error while parsing the command", err, line)
+			log.Error.Println("CAUGHT error while parsing the command", err, line)
 
 			client.writeData(command.Response)
 
@@ -417,13 +421,13 @@ command_loop:
 			break
 		case HELO:
 			if err := client.verifyHost(command.Argument); err != nil {
-				log.Warnf("Suspicious connection from: %s; continuing nonetheless", clientId)
+				log.Warning.Println("Suspicious connection from: %s; continuing nonetheless", clientId)
 			}
 			client.writeData(fmt.Sprintf("250 %s Hello %v", s.name, client.remoteAddress))
 			break
 		case EHLO:
 			if err := client.verifyHost(command.Argument); err != nil {
-				log.Warnf("Suspicious connection from: %s; continuing nonetheless", clientId)
+				log.Warning.Println("Suspicious connection from: %s; continuing nonetheless", clientId)
 			}
 
 			// honeymaster
@@ -456,7 +460,7 @@ command_loop:
 			// parse the mail address and make sure it'a a valid one
 			fromAddress, err := verifyEmailAddress(command.Argument)
 			if err != nil {
-				log.Println("Error parsing FROM address", err)
+				log.Error.Println("Error parsing FROM address", err)
 				client.writeData(kRequestAborted)
 				continue
 			}
@@ -468,7 +472,7 @@ command_loop:
 			// parse the mail address and make sure it'a a valid one
 			toAddress, err := verifyEmailAddress(command.Argument)
 			if err != nil {
-				log.Println("Error parsing TO address", err)
+				log.Error.Println("Error parsing TO address", err)
 				client.writeData(kRequestAborted)
 				continue
 			}
@@ -498,7 +502,7 @@ command_loop:
 
 	// at this point the connection will be closed therefore decrease the counter
 	s.decrementConnectionCounter(clientId)
-	log.Infoln("Client", clientId, "disconnected")
+	log.Info.Println("Client", clientId, "disconnected")
 
 }
 

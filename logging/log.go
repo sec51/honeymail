@@ -1,9 +1,11 @@
-package log
+package logging
 
 import (
 	"io"
 	"log"
 	"os"
+
+	"github.com/sec51/honeymail/config"
 )
 
 var (
@@ -14,12 +16,21 @@ var (
 )
 
 func init() {
-	file, err := os.OpenFile("honeymail.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalln("Failed to open log file honeymail.log", ":", err)
+	var multi io.Writer
+	var file *os.File
+	var err error
+	if config.LOG_FILE != "" {
+		file, err = os.OpenFile(config.LOG_FILE, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatalf("Failed to open log file %s with error: %s\n", config.LOG_FILE, err)
+		}
 	}
 
-	multi := io.MultiWriter(file, os.Stdout)
+	if config.LOG_FILE != "" {
+		multi = io.MultiWriter(file, os.Stdout)
+	} else {
+		multi = io.MultiWriter(os.Stdout)
+	}
 
 	Trace = log.New(multi,
 		"TRACE: ",

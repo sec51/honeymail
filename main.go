@@ -2,17 +2,18 @@ package main
 
 import (
 	//"flag"
-	log "github.com/Sirupsen/logrus"
 	"github.com/boltdb/bolt"
 	"github.com/sec51/goconf"
 	"github.com/sec51/honeymail/api"
 	"github.com/sec51/honeymail/envelope"
 	"github.com/sec51/honeymail/geoip"
+	logmail "github.com/sec51/honeymail/logging"
 	"github.com/sec51/honeymail/models"
 	"github.com/sec51/honeymail/processing"
 	"github.com/sec51/honeymail/processor"
 	"github.com/sec51/honeymail/smtpd"
 	"github.com/sec51/honeymail/storage"
+	"log"
 )
 
 func main() {
@@ -79,7 +80,7 @@ func main() {
 	// DEBUG ONLY
 	if todayEmails, err := storageService.ViewTodayEnvelopes(); err == nil {
 		for _, envelope := range todayEmails {
-			log.Infof("Id: %s => From: %s => To: %s\n%s", envelope.Id, envelope.From.String(), envelope.To.String(), envelope.Message)
+			logmail.Info.Printf("Id: %s => From: %s => To: %s\n%s", envelope.Id, envelope.From.String(), envelope.To.String(), envelope.Message)
 		}
 	}
 	// ============================

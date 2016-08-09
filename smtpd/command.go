@@ -3,8 +3,8 @@ package smtpd
 import (
 	"errors"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"github.com/sec51/goconf"
+	log "github.com/sec51/honeymail/logging"
 	"strconv"
 	"strings"
 	"unicode"
@@ -115,7 +115,7 @@ func interpretCommandArguments(command *ParsedCommand, originalLine string) {
 		// expect valid domain or ip
 		if partsLength == 0 {
 			command.Response = kSyntaxError
-			log.Errorln(fmt.Sprintf("%s expects an argument", command.Cmd))
+			log.Error.Println(fmt.Sprintf("%s expects an argument", command.Cmd))
 			return
 		}
 		// assign the argument
@@ -125,7 +125,7 @@ func interpretCommandArguments(command *ParsedCommand, originalLine string) {
 		if command.Cmd == MAILFROM || command.Cmd == RCPTTO {
 			if !strings.HasPrefix(argument, "<") && !strings.HasSuffix(argument, ">") {
 				command.Response = kSyntaxError
-				log.Errorln(fmt.Sprintf("%s argument needs to have: <>", command.Cmd))
+				log.Error.Println(fmt.Sprintf("%s argument needs to have: <>", command.Cmd))
 				return
 			}
 		}
@@ -137,7 +137,7 @@ func interpretCommandArguments(command *ParsedCommand, originalLine string) {
 			for i := 1; i < partsLength; i++ {
 				key, value, err := parseParameter(parts[i])
 				if err != nil {
-					log.Errorln(err)
+					log.Error.Println(err)
 					continue
 				}
 				command.AddParameter(key, value)
@@ -149,7 +149,7 @@ func interpretCommandArguments(command *ParsedCommand, originalLine string) {
 		// this do not expect parameters
 		if partsLength > 0 {
 			command.Response = kSyntaxError
-			log.Errorln(fmt.Sprintf("%s does NOT expect an argument", command.Cmd))
+			log.Error.Println(fmt.Sprintf("%s does NOT expect an argument", command.Cmd))
 			return
 		}
 		break
@@ -157,11 +157,11 @@ func interpretCommandArguments(command *ParsedCommand, originalLine string) {
 		// expect one or two args
 		// TODO: needs to be implemented
 		command.Response = kCommandNotImplemented
-		log.Errorln(fmt.Sprintf("%s not implemented", command.Cmd))
+		log.Error.Println(fmt.Sprintf("%s not implemented", command.Cmd))
 		break
 	default:
 		command.Response = kCommandNotRecognized
-		log.Errorln("Unknown command")
+		log.Error.Println("Unknown command")
 	}
 }
 
@@ -181,7 +181,7 @@ func ParseCmd(line string) *ParsedCommand {
 
 	// if it's an empty line then return: nothing to do here
 	if line == "" {
-		log.Errorln("got an empty command")
+		log.Error.Println("got an empty command")
 		command.Response = kCommandNotRecognized
 		return command
 	}
@@ -193,7 +193,7 @@ func ParseCmd(line string) *ParsedCommand {
 
 	// make sure the command contains only printable ASCII chars
 	if !IsAsciiPrintable(line) {
-		log.Errorln("command contains non 7-bit printable ASCII")
+		log.Error.Println("command contains non 7-bit printable ASCII")
 		command.Response = kCommandNotRecognized
 		return command
 	}
