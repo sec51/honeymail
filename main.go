@@ -8,6 +8,8 @@ import (
 	"github.com/sec51/honeymail/api"
 	"github.com/sec51/honeymail/envelope"
 	"github.com/sec51/honeymail/geoip"
+	"github.com/sec51/honeymail/models"
+	"github.com/sec51/honeymail/processing"
 	"github.com/sec51/honeymail/processor"
 	"github.com/sec51/honeymail/smtpd"
 	"github.com/sec51/honeymail/storage"
@@ -52,6 +54,17 @@ func main() {
 	// channel for storing the envelopes
 	storageChannel := make(chan envelope.Envelope)
 
+	// channel for sending the emails to the honeymaster
+	emailChan := make(chan models.Email)
+
+	// channel for sending the bruteforce attacksd to the honeymaster
+	bruteChan := make(chan models.BruteforceAttack)
+
+	// ============================
+	// Honeymaster processing service
+	honeymasterService := processing.NewProcessingService(bruteChan, emailChan)
+	honeymasterService.Start()
+
 	// ============================
 	// Storage service
 	storageService := storage.NewStorageService(db, storageChannel)
@@ -60,7 +73,7 @@ func main() {
 	// ============================
 	// Processing service - caluclates the stats and extract additional info from each envelope
 	// the passes it onto the storage channel for storing the results
-	processorService := processor.NewProcessorService(envelopeChannel, storageChannel)
+	processorService := processor.NewProcessorService(envelopeChannel, storageChannel, emailChan)
 	processorService.Start()
 
 	// DEBUG ONLY
@@ -72,7 +85,7 @@ func main() {
 	// ============================
 
 	withTLS := certificate != "" && privateKey != ""
-	smtpServer, err := smtpd.NewTCPServer(ip, smtpPort, smtpSecurePort, serverName, certificate, privateKey, withTLS, envelopeChannel)
+	smtpServer, err := smtpd.NewTCPServer(ip, smtpPort, smtpSecurePort, serverName, certificate, privateKey, withTLS, envelopeChannel, bruteChan)
 	if err != nil {
 		log.Fatal(err)
 	}

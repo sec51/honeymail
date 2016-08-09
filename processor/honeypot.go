@@ -1,8 +1,11 @@
 package processor
 
 import (
-	"github.com/sec51/honeymail/envelope"
+	"log"
 	"sync"
+
+	"github.com/sec51/honeymail/envelope"
+	"github.com/sec51/honeymail/models"
 )
 
 // POSSIBILITIES:
@@ -14,8 +17,9 @@ import (
 // 7. analize URLs for phishing
 
 type ProcessorService struct {
-	envelopeChannel chan envelope.Envelope
-	storageChannel  chan envelope.Envelope
+	envelopeChannel    chan envelope.Envelope
+	storageChannel     chan envelope.Envelope
+	honeymasterChannel chan models.Email
 }
 
 var (
@@ -23,10 +27,11 @@ var (
 	exiting      = false
 )
 
-func NewProcessorService(envelopeChannel chan envelope.Envelope, storageChannel chan envelope.Envelope) *ProcessorService {
+func NewProcessorService(envelopeChannel chan envelope.Envelope, storageChannel chan envelope.Envelope, honeymasterChannel chan models.Email) *ProcessorService {
 	p := new(ProcessorService)
 	p.envelopeChannel = envelopeChannel
 	p.storageChannel = storageChannel
+	p.honeymasterChannel = honeymasterChannel
 	return p
 }
 
@@ -43,6 +48,16 @@ func (p *ProcessorService) Start() {
 
 			e := <-ps.envelopeChannel
 			e.CalculateStats()
+
+			// honeymaster
+			emailData, err := e.Serialize()
+			if err != nil {
+				log.Println(err)
+			}
+			email := models.MakeEmail(e.RemoteIp, emailData)
+			p.honeymasterChannel <- email
+			// ========================================
+
 			ps.storageChannel <- e
 		}
 	}(p)

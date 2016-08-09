@@ -8,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/sec51/goconf"
 	"github.com/sec51/honeymail/envelope"
+	"github.com/sec51/honeymail/models"
 	"net"
 	"net/mail"
 	"net/textproto"
@@ -54,10 +55,12 @@ type tcpServer struct {
 	envelopeChannel chan envelope.Envelope
 	conn            *net.TCPListener
 	tlsConn         *net.Listener
+	bruteforce      chan models.BruteforceAttack
 }
 
 // this is the module responsible for setting up the communication channe
-func NewTCPServer(ip, port, securePort, serverName, certPath, keyPath string, withTLS bool, envelopeChannel chan envelope.Envelope) (*tcpServer, error) {
+func NewTCPServer(ip, port, securePort, serverName, certPath, keyPath string, withTLS bool, envelopeChannel chan envelope.Envelope,
+	bruteforce chan models.BruteforceAttack) (*tcpServer, error) {
 
 	server := tcpServer{
 		localAddr:       ip,
@@ -66,6 +69,7 @@ func NewTCPServer(ip, port, securePort, serverName, certPath, keyPath string, wi
 		name:            serverName,
 		withTLS:         withTLS,
 		envelopeChannel: envelopeChannel,
+		bruteforce:      bruteforce,
 	}
 
 	if withTLS {
@@ -239,6 +243,7 @@ func (s *tcpServer) handleTCPConnection(client *clientSession) {
 
 	// get the client remote address
 	clientId := client.conn.RemoteAddr().String()
+	ip, _, _ := net.SplitHostPort(clientId)
 
 	//check whether we need to disconnect the client because it is trying to ddos us
 	if isIpLockedDown(clientId) {
@@ -420,6 +425,11 @@ command_loop:
 			if err := client.verifyHost(command.Argument); err != nil {
 				log.Warnf("Suspicious connection from: %s; continuing nonetheless", clientId)
 			}
+
+			// honeymaster
+			// queue a message to the bruteforce attack queue for processing
+			s.bruteforce <- models.MakeBruteforceAttack(ip, command.Argument, client.isTLS)
+			// =============
 
 			client.writeData(fmt.Sprintf("250-%s Hello %v", s.name, client.remoteAddress))
 
