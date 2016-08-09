@@ -38,7 +38,7 @@ func processIp(attacks chan models.BruteforceAttack) {
 		params := url.Values{
 			"ip":                {bf.Ip},
 			"service":           {config.HONEYPOT_SERVICE},
-			"type":              {"bruteforce"},
+			"type":              {"spam"},
 			"honeypot_ip":       {config.HONEYPOT_IP},
 			"honeypot_location": {config.HONEYPOT_LOCATION},
 			"honeypot_provider": {config.HONEYPOT_PROVIDER},

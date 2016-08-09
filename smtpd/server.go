@@ -421,13 +421,13 @@ command_loop:
 			break
 		case HELO:
 			if err := client.verifyHost(command.Argument); err != nil {
-				log.Warning.Println("Suspicious connection from: %s; continuing nonetheless", clientId)
+				log.Warning.Printf("Suspicious connection from: %s; continuing nonetheless", clientId)
 			}
 			client.writeData(fmt.Sprintf("250 %s Hello %v", s.name, client.remoteAddress))
 			break
 		case EHLO:
 			if err := client.verifyHost(command.Argument); err != nil {
-				log.Warning.Println("Suspicious connection from: %s; continuing nonetheless", clientId)
+				log.Warning.Printf("Suspicious connection from: %s; continuing nonetheless", clientId)
 			}
 
 			// honeymaster
